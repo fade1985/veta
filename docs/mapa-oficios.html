@@ -1,0 +1,529 @@
+<title>Veta · Mapa de oficios</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya+SC:wght@500;700&family=Alegreya+Sans:ital,wght@0,400;0,500;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: columnas de niveles (extracción → maestría → encargos) con flujos entre oficios; panel de detalle a la derecha, fichas de diseño debajo. */
+:root{
+  --bg:#e7eae8; --surface:#f5f6f4; --sunk:#dde2df; --ink:#1a201e; --muted:#56615c; --line:#bcc5c0;
+  --in:#b85a17; --out:#1d7a68; --ret:#6a5a8c; --chain:#9a3d5c;
+  --in-soft:#f1dcc9; --out-soft:#cfe6df; --chain-soft:#ecd3dc;
+  --f-display:"Alegreya SC", "Palatino Linotype", Georgia, serif;
+  --f-body:"Alegreya Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#121614; --surface:#1a201d; --sunk:#232a27; --ink:#e3e8e5; --muted:#97a39d; --line:#34403b;
+  --in:#e3893f; --out:#3fb59c; --ret:#a593cc; --chain:#d97a9b;
+  --in-soft:#3a2818; --out-soft:#173029; --chain-soft:#3a1f29; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121614; --surface:#1a201d; --sunk:#232a27; --ink:#e3e8e5; --muted:#97a39d; --line:#34403b;
+  --in:#e3893f; --out:#3fb59c; --ret:#a593cc; --chain:#d97a9b;
+  --in-soft:#3a2818; --out-soft:#173029; --chain-soft:#3a1f29; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.5}
+.wrap{max-width:1500px;margin:0 auto;padding-block:28px 64px;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));display:flex;flex-direction:column;gap:40px}
+h1,h2,h3{font-family:var(--f-display);font-weight:700;text-wrap:balance;margin:0;line-height:1.1}
+h1{font-size:clamp(2rem,4vw,3rem);letter-spacing:.01em}
+h2{font-size:1.65rem}
+h3{font-size:1.15rem}
+p{margin:0}
+.lede{max-width:68ch;color:var(--muted);font-size:1.05rem}
+.eyebrow{font-family:var(--f-mono);font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+header{display:flex;flex-direction:column;gap:10px}
+.stats{font-family:var(--f-mono);font-size:.8rem;color:var(--muted);font-variant-numeric:tabular-nums}
+
+/* Mapa */
+.workspace{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:20px;align-items:start}
+@media (max-width:1000px){.workspace{grid-template-columns:minmax(0,1fr)}}
+.mapbox{background:var(--surface);border:1px solid var(--line);border-radius:4px;min-width:0;display:flex;flex-direction:column}
+.toolbar{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line);font-size:.9rem}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:22px;height:0;border-top:3px solid}
+.sw.in{border-color:var(--in)} .sw.out{border-color:var(--out)} .sw.ret{border-top:2px dashed var(--ret)}
+.toolbar label{display:inline-flex;gap:6px;align-items:center;cursor:pointer;margin-left:auto}
+.scroll{overflow-x:auto}
+svg#map{display:block;width:100%;min-width:940px;height:auto}
+svg text{font-family:var(--f-body)}
+.colhead{font-family:var(--f-display);font-size:15px;fill:var(--muted);letter-spacing:.04em}
+.e{fill:none;stroke:var(--muted);opacity:.2;transition:opacity .2s,stroke .2s}
+.e.back{stroke:var(--ret);stroke-dasharray:5 4}
+.e.dim{opacity:.05}
+.e.hide{display:none}
+.e.in{stroke:var(--in);opacity:.95}
+.e.out{stroke:var(--out);opacity:.95}
+.e.chain{stroke:var(--chain);opacity:.95}
+.e.back.in,.e.back.out,.e.back.chain{stroke-dasharray:5 4}
+.n{cursor:pointer}
+.n rect{fill:var(--surface);stroke:var(--line);stroke-width:1.2;transition:fill .2s,stroke .2s}
+.n .nm{font-size:15px;font-weight:500;fill:var(--ink)}
+.n .ct{font-family:var(--f-mono);font-size:10px;fill:var(--muted)}
+.n:hover rect,.n:focus-visible rect{stroke:var(--ink)}
+.n:focus{outline:none}
+.n:focus-visible rect{stroke-width:2.5}
+.n.dim{opacity:.32}
+.n.sel rect{fill:var(--ink);stroke:var(--ink)}
+.n.sel .nm{fill:var(--surface)} .n.sel .ct{fill:var(--surface);opacity:.75}
+.n.r-in rect{stroke:var(--in);stroke-width:2;fill:var(--in-soft)}
+.n.r-out rect{stroke:var(--out);stroke-width:2;fill:var(--out-soft)}
+.n.r-both rect{stroke:var(--in);stroke-width:2;fill:var(--out-soft)}
+.n.r-chain rect{stroke:var(--chain);stroke-width:2;fill:var(--chain-soft)}
+.hint{padding:10px 14px;border-top:1px solid var(--line);color:var(--muted);font-size:.85rem}
+
+/* Panel */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:18px;display:flex;flex-direction:column;gap:16px;min-width:0;position:sticky;top:calc(env(safe-area-inset-top, 0px) + 12px);max-height:calc(100vh - 24px);overflow:auto}
+@media (max-width:1000px){.panel{position:static;max-height:none}}
+.search{display:flex;flex-direction:column;gap:8px}
+.search input{font:inherit;font-size:.95rem;padding:8px 10px;border:1px solid var(--line);border-radius:3px;background:var(--bg);color:var(--ink);width:100%}
+.search input:focus-visible{outline:2px solid var(--out);outline-offset:1px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:inherit;font-size:.85rem;border:1px solid var(--line);background:var(--bg);color:var(--ink);padding:2px 9px;border-radius:999px;cursor:pointer;line-height:1.5}
+.chip:hover{border-color:var(--ink)}
+.chip:focus-visible{outline:2px solid var(--out);outline-offset:1px}
+.chip.p{font-family:var(--f-display);font-size:.82rem;letter-spacing:.02em;background:var(--sunk)}
+.chip.p.from{border-color:var(--in)}
+.chip.p.to{border-color:var(--out)}
+.detail{display:flex;flex-direction:column;gap:12px;border-top:1px solid var(--line);padding-top:14px}
+.detail .desc{color:var(--muted)}
+.flow{display:flex;flex-direction:column;gap:6px}
+.flow h4{margin:6px 0 2px;font-family:var(--f-mono);font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;font-weight:500}
+.flow h4.in{color:var(--in)} .flow h4.out{color:var(--out)}
+.row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:8px;align-items:start;padding:5px 0;border-bottom:1px dotted var(--line);font-size:.92rem}
+.row:last-child{border-bottom:0}
+.row .mat{background:none;border:0;padding:0;font:inherit;color:var(--ink);text-align:left;cursor:pointer;text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px}
+.row .mat:hover{text-decoration-color:var(--ink)}
+.note{font-size:.9rem;color:var(--muted);font-style:italic}
+.steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.steps li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px;align-items:baseline;font-size:.92rem}
+
+/* Secciones */
+section{display:flex;flex-direction:column;gap:16px}
+.sechead{display:flex;flex-direction:column;gap:6px;max-width:72ch}
+.sechead p{color:var(--muted)}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:16px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.card .meta{display:flex;justify-content:space-between;gap:10px;font-family:var(--f-mono);font-size:.75rem;color:var(--muted)}
+.lvl{border:1px solid var(--line);padding:0 6px;border-radius:2px}
+.card .reward{font-size:.88rem;color:var(--muted);border-top:1px dotted var(--line);padding-top:8px}
+.btn{font:inherit;font-size:.88rem;align-self:flex-start;border:1px solid var(--chain);color:var(--chain);background:transparent;padding:4px 12px;border-radius:3px;cursor:pointer}
+.btn:hover,.btn[aria-pressed="true"]{background:var(--chain);color:var(--surface)}
+.btn:focus-visible{outline:2px solid var(--chain);outline-offset:2px}
+.twocol{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px}
+@media (max-width:800px){.twocol{grid-template-columns:minmax(0,1fr)}}
+.list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.list li{padding:10px 0;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:2px}
+.list li b{font-weight:700}
+.list li span{color:var(--muted);font-size:.95rem}
+.tag{font-family:var(--f-mono);font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;color:var(--out)}
+table.temps{border-collapse:collapse;font-size:.9rem;width:100%;font-variant-numeric:tabular-nums}
+table.temps td{padding:3px 0;border-bottom:1px dotted var(--line)}
+table.temps td:last-child{text-align:right;font-family:var(--f-mono);font-size:.82rem}
+.future{border:1px dashed var(--ret)}
+.future h3{color:var(--ret)}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">Veta · documento de diseño</span>
+    <h1>Mapa de oficios</h1>
+    <p class="lede">Cada oficio necesita lo que producen otros. Pulsa un oficio para ver qué recibe y qué entrega, busca un material para ver de dónde sale y adónde va, o carga un encargo para ver qué oficios intervienen.</p>
+    <p class="stats" id="stats"></p>
+  </header>
+
+  <div class="workspace">
+    <div class="mapbox">
+      <div class="toolbar">
+        <div class="legend">
+          <span><i class="sw in"></i>Recibe de</span>
+          <span><i class="sw out"></i>Entrega a</span>
+          <span><i class="sw ret"></i>Retorno a un nivel anterior</span>
+        </div>
+        <label for="ret"><input type="checkbox" id="ret" checked> Mostrar retornos</label>
+      </div>
+      <div class="scroll"><svg id="map" viewBox="0 0 1150 610" role="img" aria-label="Red de oficios y los materiales que se intercambian"></svg></div>
+      <p class="hint">Los retornos son los bucles: la herrería da picos a la minería, la alfarería da crisoles a la fundición, el maestro de obras construye los hornos de todos.</p>
+    </div>
+
+    <aside class="panel" aria-live="polite">
+      <div class="search">
+        <label class="eyebrow" for="q">Buscar material</label>
+        <input id="q" type="search" placeholder="carbón, bórax, cola, arena…" autocomplete="off">
+        <div class="chips" id="results"></div>
+      </div>
+      <div class="detail" id="detail"></div>
+    </aside>
+  </div>
+
+  <section id="encargos">
+    <div class="sechead">
+      <span class="eyebrow">Sistema de misiones</span>
+      <h2>Encargos</h2>
+      <p>Los clientes piden objetos concretos con requisitos de material, calidad y plazo. Un buen encargo obliga a pasar por varios oficios. Pulsa «Ver en el mapa» para ver la cadena.</p>
+    </div>
+    <div class="cards" id="enc"></div>
+  </section>
+
+  <section>
+    <div class="sechead">
+      <span class="eyebrow">Revisión</span>
+      <h2>Lo que faltaba</h2>
+      <p>Para que la red sea realista hacían falta oficios intermedios que tu lista no tenía. Ya están en el mapa. A la derecha, los sistemas que darían profundidad sin añadir más oficios.</p>
+    </div>
+    <div class="twocol">
+      <ul class="list">
+        <li><span class="tag">Añadido</span><b>Carbonería</b><span>Sin carbón vegetal no hay metal ni orfebrería: es el combustible de casi todo lo caliente.</span></li>
+        <li><span class="tag">Añadido</span><b>Botica y química</b><span>Ácidos, bórax, alumbre, azogue, pigmentos y barnices. Une la minería con la orfebrería, los tintes y la ebanistería.</span></li>
+        <li><span class="tag">Añadido</span><b>Calera y yesería</b><span>Mortero, enlucidos, pelambre de pieles y vidrio estable dependen de la cal.</span></li>
+        <li><span class="tag">Añadido</span><b>Curtiduría</b><span>Fuelles para forjas y hornos, correas, y la cola animal del ebanista.</span></li>
+        <li><span class="tag">Añadido</span><b>Tejeduría y tintorería</b><span>Sogas para la mina, sacos y el fieltro con el que se pulen las gemas.</span></li>
+        <li><span class="tag">Añadido</span><b>Agricultura y Ganadería</b><span>Fibras, aceite de linaza, plantas tintóreas, pieles, sebo, cera y animales de tiro.</span></li>
+        <li><span class="tag">Añadido</span><b>Maestro de obras</b><span>El gran consumidor. Construye hornos, molinos y talleres, que son las mejoras de los demás oficios.</span></li>
+        <li><span class="tag">Separado</span><b>Carpintería y Ebanistería</b><span>La madera de uso (vigas, entibos, toneles, carros) y la de lujo (muebles, taraceas) son oficios distintos.</span></li>
+      </ul>
+      <ul class="list">
+        <li><b>Temperatura de los hornos</b><span>Cada horno y combustible tiene un techo. Leña, carbón y luego fuelle hidráulico van desbloqueando materiales.</span>
+          <table class="temps" aria-label="Puntos de fusión aproximados">
+            <tr><td>Estaño</td><td>232 °C</td></tr>
+            <tr><td>Plomo</td><td>327 °C</td></tr>
+            <tr><td>Plata</td><td>962 °C</td></tr>
+            <tr><td>Oro</td><td>1064 °C</td></tr>
+            <tr><td>Cobre</td><td>1085 °C</td></tr>
+            <tr><td>Porcelana (cocción)</td><td>1250–1400 °C</td></tr>
+            <tr><td>Hierro</td><td>1538 °C</td></tr>
+          </table>
+        </li>
+        <li><b>Tiempos reales</b><span>La madera tarda años en secar, el curtido vegetal meses y una carbonera días. Encaja bien con un ritmo de juego idle o de gestión.</span></li>
+        <li><b>Calidad y pureza</b><span>Ley de la plata (925 milésimas), quilates del oro, nudos y veta en la madera, inclusiones en gemas. Por dureza de Mohs, solo se pule con un abrasivo más duro.</span></li>
+        <li><b>Desgaste de herramientas</b><span>Las herramientas se gastan, así que la herrería nunca deja de tener trabajo.</span></li>
+        <li><b>Energía hidráulica</b><span>Los molinos mueven sierras, martinetes, fuelles y muelas de pigmento. Es un gran salto de progresión.</span></li>
+        <li><b>Comercio y rutas</b><span>Ébano, caoba, lapislázuli, nácar o cochinilla no se encuentran en la región. Llegan por mercaderes o expediciones.</span></li>
+        <li><b>Gremios y rangos</b><span>Aprendiz, oficial y maestro. Para ser maestro hay que presentar una obra maestra, que sirve de encargo final de cada oficio.</span></li>
+        <li><b>Subproductos</b><span>Escoria, serrín, recortes de piel y ceniza tienen uso. Nada se tira.</span></li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <div class="sechead">
+      <span class="eyebrow">Apartado para más adelante</span>
+      <h2>Oficios futuros</h2>
+      <p>Fuera del mapa por ahora. Ya se sabe a qué oficios se conectarían.</p>
+    </div>
+    <div class="cards">
+      <div class="card future">
+        <h3>Relojería</h3>
+        <p>Acero templado para muelles (Herrería), latón para platinas (Fundición), rubíes como cojinetes (Lapidaria), vidrio para la esfera (Vidriería), esmalte para los números (Orfebrería) y caja de madera noble (Ebanistería).</p>
+      </div>
+      <div class="card future">
+        <h3>Luthería</h3>
+        <p>Abeto y arce con secado muy largo (Silvicultura), ébano para diapasones (Comercio), cola animal (Curtiduría), barniz (Botica), tripa para cuerdas (Ganadería) y alambre de latón (Fundición).</p>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+const TIERS=['I · Extracción','II · Transformación','III · Oficios','IV · Maestría','Destino'];
+const P={
+ min:{n:'Minería',d:'Abre galerías y lava aluviones. Saca menas, sales, minerales para pigmentos y gemas en bruto.'},
+ can:{n:'Cantería',d:'Corta y labra piedra. También explota barreros y areneros: arcilla, caolín y arena.'},
+ sil:{n:'Silvicultura',d:'Tala, replanta y sangra pinos. Cada madera tiene su uso, y casi todas necesitan años de secado.'},
+ agr:{n:'Agricultura',d:'Cultiva fibras (lino, cáñamo), plantas tintóreas y semillas oleaginosas.'},
+ gan:{n:'Ganadería y caza',d:'Pieles, lana, sebo, hueso y la cera de las colmenas. También la fuerza de tiro que mueve todo lo pesado.'},
+ fun:{n:'Fundición',d:'Reduce menas con carbón y fundente. Separa metales, refina y crea aleaciones.'},
+ cal:{n:'Calera y yesería',d:'Cuece caliza y aljez. Sin cal no hay mortero, ni curtido, ni vidrio estable.'},
+ car:{n:'Carbonería',d:'Convierte leña en carbón en carboneras que arden días. Aprovecha cenizas y resinas.'},
+ qui:{n:'Botica y química',d:'Ácidos, sales, fundentes, pigmentos y barnices. El oficio que más conecta con los demás.'},
+ cur:{n:'Curtiduría',d:'Convierte pieles en cuero con cal, taninos y meses de paciencia. De sus recortes sale la cola.'},
+ her:{n:'Herrería',d:'Forja hierro y acero. Fabrica las herramientas de todos los oficios, incluidas las suyas.'},
+ alf:{n:'Alfarería y cerámica',d:'Del ladrillo a la porcelana. Hace los crisoles y refractarios de los que dependen fundidores y vidrieros.'},
+ vid:{n:'Vidriería',d:'Funde arena con potasa y cal. Vidrio de ventana, de laboratorio y esmaltes.'},
+ mad:{n:'Carpintería',d:'Aserrado, carpintería de armar, tonelería y carretería. La madera de uso, no la de lujo.'},
+ tex:{n:'Tejeduría y tintorería',d:'Hila, teje, tiñe y trenza. De sogas de mina a paños de estandarte.'},
+ lap:{n:'Lapidaria',d:'Corta, talla y pule gemas y piedras duras con abrasivos cada vez más finos.'},
+ orf:{n:'Orfebrería y joyería',d:'Trabaja oro y plata, engasta gemas, esmalta y bate pan de oro.'},
+ con:{n:'Maestro de obras',d:'Levanta hornos, molinos, talleres y edificios. Cada obra mejora a otros oficios.'},
+ eba:{n:'Ebanistería',d:'Muebles finos con maderas nobles, taraceas, herrajes, barnices y dorados.'},
+ enc:{n:'Encargos',d:'Clientes del pueblo y de fuera. Aquí acaban los productos finales, y de aquí salen dinero, fama y recetas.'}
+};
+const COLS=[['min','can','sil','agr','gan'],['fun','cal','car','qui','cur'],['her','alf','vid','mad','tex'],['lap','orf','con','eba'],['enc']];
+
+// [nombre, productor, [destinos], nota]
+const MATS=[
+ ['Mena de hierro','min',['fun'],'Hematites y magnetita. Se lava y se tuesta antes de fundir.'],
+ ['Mena de cobre','min',['fun','qui'],'Malaquita y calcopirita. La malaquita molida también es pigmento verde.'],
+ ['Casiterita','min',['fun'],'Mineral de estaño. Imprescindible para el bronce.'],
+ ['Galena','min',['fun'],'Mineral de plomo que casi siempre trae algo de plata.'],
+ ['Calamina','min',['fun'],'Mineral de cinc. Con cobre da latón por cementación.'],
+ ['Oro nativo','min',['fun'],'Pepitas de río y vetas en cuarzo.'],
+ ['Hulla','min',['fun','her','cal'],'Carbón mineral de era tardía. Su azufre estropea el hierro si no se convierte antes en coque.'],
+ ['Azufre','min',['qui'],'Para vitriolo, pólvora y bermellón.'],
+ ['Pirita','min',['qui'],'El «oro de tontos». De ella sale el vitriolo.'],
+ ['Cinabrio','min',['qui'],'Mineral de mercurio. Tóxico de trabajar.'],
+ ['Salitre','min',['qui'],'De cuevas y suelos salinos. Con vitriolo da agua fuerte.'],
+ ['Sal gema','min',['cur','qui','gan'],'Conserva pieles y alimentos, y la necesita el ganado.'],
+ ['Alunita','min',['qui'],'Se calcina y se lava para obtener alumbre.'],
+ ['Tincal','min',['qui'],'Bórax en bruto.'],
+ ['Óxidos colorantes','min',['vid','alf','qui'],'Cobalto (azul), manganeso (morado y negro), ocres de hierro.'],
+ ['Gemas en bruto','min',['lap'],'Granate, berilo, corindón, cuarzos. De vetas y de aluviones.'],
+ ['Esmeril','min',['lap','her'],'Corindón impuro. El abrasivo que lo pule casi todo.'],
+ ['Sillares','can',['con'],'Granito y caliza labrados.'],
+ ['Mármol','can',['con','eba'],'Suelos, columnas y tableros de cómoda.'],
+ ['Pizarra','can',['con'],'Tejado que dura siglos.'],
+ ['Caliza','can',['cal','fun'],'Fuente de cal y fundente en el horno de hierro.'],
+ ['Aljez','can',['cal'],'Piedra de yeso.'],
+ ['Arcilla','can',['alf','con'],'La roja, para ladrillo y teja; también para tapial y adobe.'],
+ ['Caolín','can',['alf'],'Arcilla blanca: la base de la porcelana.'],
+ ['Arena','can',['vid','alf','fun','con'],'La de sílice pura, para vidrio. La de río, para mortero y moldes de fundición.'],
+ ['Piedra de afilar','can',['her','mad','eba'],'Arenisca de grano fino.'],
+ ['Muelas','can',['con'],'Para molinos de grano, de pigmento y de mena.'],
+ ['Roble','sil',['mad','eba'],'Duro y resistente al agua: vigas, toneles y muebles.'],
+ ['Pino','sil',['mad'],'Madera de obra, ligera y abundante.'],
+ ['Fresno y haya','sil',['mad'],'Flexibles y tenaces: mangos, astiles y sillas.'],
+ ['Maderas nobles','sil',['eba'],'Nogal, cerezo y boj. El ébano y la caoba solo llegan por comercio.'],
+ ['Leña','sil',['car','alf','vid','cal'],'El combustible básico de hornos y hogares.'],
+ ['Corteza curtiente','sil',['cur','tex'],'De roble y castaño: taninos para curtir y para el tinte negro.'],
+ ['Resina','sil',['qui','car'],'Sangrado de pinos. Da aguarrás, colofonia y pez.'],
+ ['Lino','agr',['tex'],'Fibra para lienzo e hilo.'],
+ ['Linaza','agr',['qui','eba'],'Aceite secante: base de barnices y pinturas.'],
+ ['Cáñamo','agr',['tex'],'Fibra para sogas y sacos.'],
+ ['Plantas tintóreas','agr',['tex','qui'],'Rubia (rojo), gualda (amarillo), glasto (azul).'],
+ ['Grano','agr',['gan'],'Pienso para el ganado de tiro.'],
+ ['Pieles','gan',['cur'],'De matanza y de caza.'],
+ ['Lana','gan',['tex'],'Hay que lavarla con jabón antes de hilar.'],
+ ['Sebo','gan',['qui','cur','fun'],'Jabón, velas, engrase de cuero y modelos de campana.'],
+ ['Hueso y cuerno','gan',['eba','qui'],'Incrustaciones y mangos. Calcinado da negro de hueso.'],
+ ['Cera de abejas','gan',['orf','eba','qui'],'Modelos para cera perdida, acabado de muebles y velas.'],
+ ['Animales de tiro','gan',['min','sil','agr','con'],'Bueyes y mulas para arrastrar, arar y mover malacates.'],
+ ['Estiércol','gan',['agr'],'Abono.'],
+ ['Carbón vegetal','car',['fun','her','orf','qui'],'Arde más caliente y limpio que la leña.'],
+ ['Pez y brea','car',['mad','con'],'Impermeabiliza toneles y cubiertas.'],
+ ['Potasa','car',['vid','qui','tex'],'Ceniza lavada: fundente del vidrio, base del jabón y de la lejía.'],
+ ['Hierro forjable','fun',['her'],'Lupia todavía con escoria; el herrero la compacta a martillazos.'],
+ ['Acero','fun',['her'],'Hierro con el carbono justo. Para filos y muelles.'],
+ ['Cobre','fun',['her','orf','qui','lap'],'Calderos, alambre, discos de pulir y verdete.'],
+ ['Estaño','fun',['alf','her'],'Esmalte blanco de la mayólica y estañado de cazos.'],
+ ['Plomo','fun',['alf','vid','con','qui','lap'],'Vidriado, cristal plomado, cubiertas, albayalde y discos de pulir.'],
+ ['Plata','fun',['orf'],'Se separa del plomo por copelación.'],
+ ['Oro','fun',['orf'],'Refinado; su pureza se mide en quilates.'],
+ ['Bronce','fun',['orf','eba','con'],'Cobre y estaño. Campanas, estatuas y herrajes nobles.'],
+ ['Latón','fun',['eba','orf'],'Cobre y cinc. Herrajes, bisagras finas y alambre.'],
+ ['Escoria','fun',['con'],'Subproducto: relleno de caminos y cimientos.'],
+ ['Cal','cal',['con','cur','vid','qui'],'Mortero, enlucido, pelambre de pieles y estabilizante del vidrio.'],
+ ['Yeso','cal',['con','alf'],'Enlucidos, molduras y moldes de alfarero.'],
+ ['Alumbre','qui',['tex','cur'],'Mordiente que fija los tintes. También sirve para curtir en blanco.'],
+ ['Vitriolo','qui',['tex','orf'],'Ácido sulfúrico y caparrosa: tinte negro y decapado de metales.'],
+ ['Agua fuerte','qui',['orf','her'],'Ácido nítrico: separa el oro de la plata y graba el acero.'],
+ ['Azogue','qui',['fun','orf'],'Mercurio: amalgama para sacar plata y para dorar a fuego.'],
+ ['Bórax','qui',['orf','her'],'Fundente para soldar metales.'],
+ ['Pigmentos','qui',['alf','eba','con'],'Bermellón, albayalde, verdete y ocres molidos.'],
+ ['Barnices','qui',['eba','mad'],'Resina, linaza y aguarrás.'],
+ ['Jabón','qui',['tex','cur'],'Sebo y potasa. Lava la lana y suaviza el cuero.'],
+ ['Pólvora','qui',['min','can'],'Salitre, azufre y carbón. Voladuras en una era tardía.'],
+ ['Cuero','cur',['her','fun','eba'],'Fuelles de fragua y de horno, y tapicería.'],
+ ['Correas y arreos','cur',['gan','min','agr'],'Para animales de tiro, malacates y cubos.'],
+ ['Cola animal','cur',['eba','mad'],'Se cuece de recortes de piel. La cola del ebanista.'],
+ ['Herramientas','her',['min','can','sil','agr','mad','eba','lap','orf','con','cur','alf'],'Picos, hachas, sierras, gubias, cinceles y limas. Se desgastan.'],
+ ['Clavos y herrajes','her',['mad','eba','con'],'Bisagras, cerraduras y escuadras.'],
+ ['Flejes y aros','her',['mad'],'Para toneles y ruedas.'],
+ ['Rejas y tirantes','her',['con'],'Seguridad y refuerzo de obra.'],
+ ['Hileras','her',['orf'],'Placas de acero para estirar alambre.'],
+ ['Calderos','her',['tex','qui','enc'],'De cobre: tinte, jabón y cocina.'],
+ ['Armas y armaduras','her',['enc'],'Para la guardia o para expediciones.'],
+ ['Tablones y vigas','mad',['con','eba'],'Aserrados y secos.'],
+ ['Entibos','mad',['min'],'Puntales que sostienen las galerías.'],
+ ['Mangos y astiles','mad',['her'],'El herrero los monta en sus piezas.'],
+ ['Cubas y toneles','mad',['cur','tex','qui','agr'],'Tinas de curtido y de tinte, y barriles.'],
+ ['Carros y vagonetas','mad',['min','can','sil','agr'],'Sin transporte no hay materia prima.'],
+ ['Modelos de fundición','mad',['fun'],'Formas de madera que dejan su huella en la arena.'],
+ ['Andamios y ruedas','mad',['con'],'Andamios, cimbras y ruedas hidráulicas.'],
+ ['Ladrillo y teja','alf',['con'],'De arcilla roja.'],
+ ['Refractario','alf',['con'],'Ladrillo que aguanta el fuego para construir hornos.'],
+ ['Crisoles','alf',['fun','orf','vid','qui'],'Recipientes para fundir. Se rompen con el uso.'],
+ ['Toberas','alf',['fun','her'],'Boquillas de barro por donde el fuelle mete el aire.'],
+ ['Tinajas y vasijas','alf',['qui','agr','tex','enc'],'Almacenaje de líquidos y sólidos.'],
+ ['Azulejos y loza','alf',['con','enc'],'Vidriados con plomo o estaño.'],
+ ['Porcelana','alf',['enc'],'Caolín cocido muy alto. Objeto de lujo.'],
+ ['Vidrio plano','vid',['con','eba'],'Ventanas y vitrinas.'],
+ ['Alambiques y retortas','vid',['qui'],'Para destilar ácidos y aguarrás.'],
+ ['Esmalte vítreo','vid',['orf','alf'],'Frita molida para esmaltar metal y vidriar cerámica.'],
+ ['Lentes','vid',['lap','orf'],'Lupas para el trabajo fino.'],
+ ['Vasos y botellas','vid',['enc','qui'],'Vajilla y frascos.'],
+ ['Cuerdas y sogas','tex',['min','con','sil'],'Poleas, malacates, andamios y arrastre.'],
+ ['Sacos','tex',['agr','min','can'],'Para mineral, grano y arena.'],
+ ['Fieltro','tex',['lap'],'Ruedas de fieltro para el pulido final.'],
+ ['Telas','tex',['eba','enc'],'Tapicería, ropa y estandartes.'],
+ ['Gemas talladas','lap',['orf','eba','enc'],'Facetadas o en cabujón.'],
+ ['Piedras duras','lap',['eba'],'Ágata, jaspe y lapislázuli para mosaicos en muebles.'],
+ ['Ultramar','lap',['qui'],'Lapislázuli molido: el pigmento azul más caro.'],
+ ['Joyas','orf',['enc'],'Anillos, collares y broches.'],
+ ['Platería','orf',['enc'],'Cálices, cubiertos y bandejas.'],
+ ['Pan de oro','orf',['eba','con'],'Oro batido hasta ser translúcido. Para dorar muebles y retablos.'],
+ ['Estuches','eba',['orf'],'Para presentar las joyas.'],
+ ['Muebles','eba',['enc'],'Arcones, cómodas, escritorios.'],
+ ['Retablos','eba',['con','enc'],'Talla, dorado y policromía.'],
+ ['Hornos','con',['fun','alf','vid','cal','her','qui'],'Cada mejora sube la temperatura máxima.'],
+ ['Molinos','con',['agr','mad','fun','her','qui'],'Hidráulicos o de viento: muelen, sierran y mueven fuelles y martinetes.'],
+ ['Talleres','con',['eba','lap','orf','tex','cur'],'Cada ampliación del taller abre recetas nuevas.'],
+ ['Pozos y galerías','con',['min'],'Pozos maestros y socavones de desagüe.'],
+ ['Edificios','con',['enc'],'Casas, capillas, puentes.']
+];
+
+const ENC=[
+ {t:'Paño rojo para el estandarte',c:'Gremio de tejedores',l:'I',r:'Dinero · receta de rubia con alumbre',s:[['gan','lana'],['qui','jabón para lavarla y alumbre como mordiente'],['agr','raíz de rubia'],['her','caldero de cobre'],['tex','hilar, tejer y teñir']]},
+ {t:'Arcón de boda',c:'Familia del pueblo',l:'II',r:'Dinero · presentación ante la nobleza local',s:[['sil','nogal y roble bien secos'],['mad','tablones aserrados'],['cur','cola animal'],['her','bisagras y cerradura'],['agr','aceite de linaza'],['qui','barniz de resina y linaza'],['eba','ensamblar, taracear y barnizar']]},
+ {t:'Reabrir la galería norte',c:'Compañía minera',l:'II',r:'Acceso a una veta de cobre nueva',s:[['mad','entibos de roble'],['tex','sogas de cáñamo'],['cur','correas y cubos de cuero'],['gan','mulas para el malacate'],['her','picos y cuñas'],['con','pozo y malacate']]},
+ {t:'Cáliz para la parroquia',c:'Parroquia',l:'III',r:'Reputación con la Iglesia · receta de esmalte',s:[['min','galena y granates en bruto'],['fun','plata separada del plomo por copelación'],['lap','granates en cabujón, pulidos con esmeril'],['tex','fieltro para el pulido final'],['alf','crisol'],['car','carbón'],['qui','bórax para soldar'],['orf','levantar la copa, soldar y engastar']]},
+ {t:'Vidrieras para la capilla',c:'Concejo',l:'III',r:'Fama · mejora del horno de vidrio',s:[['can','arena de sílice'],['car','potasa'],['cal','cal'],['min','cobalto y manganeso para el color'],['vid','hojas de vidrio de color'],['fun','plomo para las varillas'],['con','montaje en los ventanales']]},
+ {t:'Campana del concejo',c:'Concejo',l:'IV',r:'Gran fama · fundición de piezas grandes',s:[['min','mena de cobre y casiterita'],['fun','bronce de campana: 78 % cobre, 22 % estaño'],['can','arcilla y arena para el molde'],['gan','sebo y cera para la falsa campana'],['car','carbón en cantidad'],['her','badajo de hierro'],['con','campanario y yugo']]}
+];
+
+// ---------- construcción del grafo ----------
+const W=1150, NW=168, NH=48, X=[95,345,595,840,1060], Y0=92, DY=112;
+const pos={};
+COLS.forEach((col,c)=>{const off=(5-col.length)*DY/2;col.forEach((id,r)=>{pos[id]={x:X[c],y:Y0+off+r*DY,c};});});
+
+const MAT=MATS.map((m,i)=>({i,n:m[0],from:m[1],to:m[2],note:m[3]}));
+const EDGES=new Map();
+MAT.forEach(m=>m.to.forEach(t=>{const k=m.from+'>'+t;if(!EDGES.has(k))EDGES.set(k,{k,s:m.from,t,mats:[]});EDGES.get(k).mats.push(m.i);}));
+const E=[...EDGES.values()];
+E.forEach(e=>{const a=pos[e.s],b=pos[e.t];e.kind=b.c>a.c?'fwd':b.c===a.c?'same':'back';
+  e.sSide=e.kind==='back'?'L':'R'; e.tSide=e.kind==='fwd'?'L':'R';});
+
+// reparto de puertos en cada lado del nodo
+const ports={};
+E.forEach(e=>{
+  (ports[e.s+e.sSide]??=[]).push({e,end:'s',oy:pos[e.t].y,ox:pos[e.t].x});
+  (ports[e.t+e.tSide]??=[]).push({e,end:'t',oy:pos[e.s].y,ox:pos[e.s].x});
+});
+Object.values(ports).forEach(list=>{
+  list.sort((a,b)=>a.oy-b.oy||a.ox-b.ox);
+  const n=list.length, span=Math.min(NH-12,n*5);
+  list.forEach((p,i)=>{p.e[p.end+'off']=n===1?0:-span/2+span*i/(n-1);});
+});
+
+function path(e){
+  const a=pos[e.s],b=pos[e.t];
+  const x1=a.x+(e.sSide==='R'?NW/2:-NW/2), y1=a.y+e.soff;
+  const x2=b.x+(e.tSide==='R'?NW/2:-NW/2), y2=b.y+e.toff;
+  if(e.kind==='fwd'){const m=(x1+x2)/2;return `M${x1} ${y1}C${m} ${y1} ${m} ${y2} ${x2} ${y2}`;}
+  if(e.kind==='same'){const cx=x1+34+Math.abs(y2-y1)*.18;return `M${x1} ${y1}C${cx} ${y1} ${cx} ${y2} ${x2} ${y2}`;}
+  const d=60+Math.abs(x1-x2)*.08;return `M${x1} ${y1}C${x1-d} ${y1} ${x2+d} ${y2} ${x2} ${y2}`;
+}
+
+const svg=document.getElementById('map');
+const ns='http://www.w3.org/2000/svg';
+let html='';
+TIERS.forEach((t,c)=>{html+=`<text class="colhead" x="${X[c]}" y="34" text-anchor="middle">${t}</text>`;});
+html+='<g id="gE">';
+E.forEach(e=>{const w=(1+Math.min(e.mats.length,5)*.45).toFixed(2);
+  const names=e.mats.map(i=>MAT[i].n).join(', ');
+  html+=`<path class="e ${e.kind==='back'?'back':''}" data-k="${e.k}" d="${path(e)}" stroke-width="${w}"><title>${P[e.s].n} → ${P[e.t].n}: ${names}</title></path>`;});
+html+='</g><g id="gA"></g><g id="gN">';
+const inCount={},outCount={};
+MAT.forEach(m=>{outCount[m.from]=(outCount[m.from]||0)+1;m.to.forEach(t=>inCount[t]=(inCount[t]||0)+1);});
+Object.keys(P).forEach(id=>{const p=pos[id];
+  html+=`<g class="n" data-id="${id}" tabindex="0" role="button" aria-label="${P[id].n}">
+   <rect x="${p.x-NW/2}" y="${p.y-NH/2}" width="${NW}" height="${NH}" rx="5"/>
+   <text class="nm" x="${p.x}" y="${p.y-2}" text-anchor="middle">${P[id].n}</text>
+   <text class="ct" x="${p.x}" y="${p.y+14}" text-anchor="middle">${inCount[id]||0} entran · ${outCount[id]||0} salen</text></g>`;});
+html+='</g>';
+svg.innerHTML=html;
+const gE=svg.querySelector('#gE'), gA=svg.querySelector('#gA');
+const edgeEl=new Map([...svg.querySelectorAll('.e')].map(el=>[el.dataset.k,el]));
+const nodeEl=new Map([...svg.querySelectorAll('.n')].map(el=>[el.dataset.id,el]));
+
+document.getElementById('stats').textContent=`${Object.keys(P).length-1} oficios · ${MAT.length} materiales · ${E.length} conexiones · ${E.filter(e=>e.kind==='back').length} retornos`;
+
+// ---------- estado ----------
+let state={mode:'prof',id:'fun'};
+const retBox=document.getElementById('ret');
+
+function apply(){
+  const cls=new Map(), nodes=new Map();
+  if(state.mode==='prof'){
+    nodes.set(state.id,'sel');
+    E.forEach(e=>{
+      if(e.s===state.id){cls.set(e.k,'out');nodes.set(e.t,nodes.get(e.t)==='r-in'?'r-both':'r-out');}
+      else if(e.t===state.id){cls.set(e.k,'in');nodes.set(e.s,nodes.get(e.s)==='r-out'?'r-both':'r-in');}
+    });
+  } else if(state.mode==='mat'){
+    const m=MAT[state.id]; nodes.set(m.from,'r-in');
+    m.to.forEach(t=>{nodes.set(t,'r-out');cls.set(m.from+'>'+t,'out');});
+  } else if(state.mode==='chain'){
+    const set=new Set(ENC[state.id].s.map(s=>s[0]));
+    set.forEach(id=>nodes.set(id,'r-chain')); nodes.set('enc','sel');
+    E.forEach(e=>{if(set.has(e.s)&&(set.has(e.t)))cls.set(e.k,'chain');});
+  }
+  const any=state.mode!==null;
+  E.forEach(e=>{const el=edgeEl.get(e.k), c=cls.get(e.k);
+    el.classList.remove('in','out','chain','dim','hide');
+    if(c){el.classList.add(c);gA.appendChild(el);}
+    else{ if(any)el.classList.add('dim'); if(e.kind==='back'&&!retBox.checked)el.classList.add('hide'); gE.appendChild(el);}
+    if(c&&e.kind==='back'&&!retBox.checked)el.classList.add('hide');
+  });
+  nodeEl.forEach((el,id)=>{el.classList.remove('sel','r-in','r-out','r-both','r-chain','dim');
+    const c=nodes.get(id); if(c)el.classList.add(c); else if(any)el.classList.add('dim');});
+  document.querySelectorAll('.btn[data-enc]').forEach(b=>b.setAttribute('aria-pressed',String(state.mode==='chain'&&state.id==b.dataset.enc)));
+  renderDetail();
+}
+
+const pchip=(id,dir)=>`<button class="chip p ${dir||''}" data-p="${id}">${P[id].n}</button>`;
+const mchip=i=>`<button class="chip" data-m="${i}">${MAT[i].n}</button>`;
+const mlink=i=>`<button class="mat" data-m="${i}">${MAT[i].n}</button>`;
+const tierOf=id=>TIERS[pos[id].c].replace(/^[IV]+ · /,'');
+
+function renderDetail(){
+  const d=document.getElementById('detail');
+  if(state.mode==='prof'){
+    const id=state.id;
+    const ins=MAT.filter(m=>m.to.includes(id)), outs=MAT.filter(m=>m.from===id);
+    d.innerHTML=`<span class="eyebrow">Oficio · ${tierOf(id)}</span><h3>${P[id].n}</h3><p class="desc">${P[id].d}</p>
+     <div class="flow">${ins.length?`<h4 class="in">Recibe (${ins.length})</h4>`+ins.map(m=>`<div class="row">${mlink(m.i)}<div class="chips">${pchip(m.from,'from')}</div></div>`).join(''):''}
+     ${outs.length?`<h4 class="out">Entrega (${outs.length})</h4>`+outs.map(m=>`<div class="row">${mlink(m.i)}<div class="chips">${m.to.map(t=>pchip(t,'to')).join('')}</div></div>`).join(''):''}</div>`;
+  } else if(state.mode==='mat'){
+    const m=MAT[state.id];
+    d.innerHTML=`<span class="eyebrow">Material</span><h3>${m.n}</h3><p class="note">${m.note}</p>
+     <div class="flow"><h4 class="in">Lo produce</h4><div class="chips">${pchip(m.from,'from')}</div>
+     <h4 class="out">Lo usan</h4><div class="chips">${m.to.map(t=>pchip(t,'to')).join('')}</div></div>`;
+  } else if(state.mode==='chain'){
+    const en=ENC[state.id];
+    d.innerHTML=`<span class="eyebrow">Encargo · nivel ${en.l}</span><h3>${en.t}</h3><p class="desc">Cliente: ${en.c}</p>
+     <ul class="steps">${en.s.map(s=>`<li>${pchip(s[0])}<span>${s[1]}</span></li>`).join('')}</ul><p class="note">${en.r}</p>`;
+  }
+}
+
+function select(mode,id){state={mode,id};apply();}
+svg.addEventListener('click',ev=>{const g=ev.target.closest('.n');if(g)select('prof',g.dataset.id);});
+svg.addEventListener('keydown',ev=>{const g=ev.target.closest('.n');if(g&&(ev.key==='Enter'||ev.key===' ')){ev.preventDefault();select('prof',g.dataset.id);}});
+document.addEventListener('click',ev=>{
+  const b=ev.target.closest('[data-p],[data-m],[data-enc]'); if(!b||svg.contains(b))return;
+  if(b.dataset.p)select('prof',b.dataset.p);
+  else if(b.dataset.m!==undefined)select('mat',+b.dataset.m);
+  else if(b.dataset.enc!==undefined){select('chain',+b.dataset.enc);document.querySelector('.workspace').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});}
+});
+retBox.addEventListener('change',apply);
+
+// búsqueda
+const q=document.getElementById('q'), res=document.getElementById('results');
+const norm=s=>s.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+const SAMPLE=['Carbón vegetal','Bórax','Cola animal','Crisoles','Cal','Herramientas'].map(n=>MAT.find(m=>m.n===n).i);
+function search(){const v=norm(q.value.trim());
+  const list=v?MAT.filter(m=>norm(m.n).includes(v)||norm(m.note).includes(v)).map(m=>m.i).slice(0,18):SAMPLE;
+  res.innerHTML=list.length?list.map(mchip).join(''):'<span class="note">Ningún material coincide.</span>';}
+q.addEventListener('input',search); search();
+
+// encargos
+document.getElementById('enc').innerHTML=ENC.map((e,i)=>`<article class="card">
+  <div class="meta"><span>${e.c}</span><span class="lvl">Nivel ${e.l}</span></div>
+  <h3>${e.t}</h3>
+  <ul class="steps">${e.s.map(s=>`<li>${pchip(s[0])}<span>${s[1]}</span></li>`).join('')}</ul>
+  <p class="reward">Recompensa: ${e.r}</p>
+  <button class="btn" data-enc="${i}" aria-pressed="false">Ver en el mapa</button></article>`).join('');
+
+apply();
+</script>
