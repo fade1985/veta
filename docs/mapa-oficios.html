@@ -121,6 +121,26 @@ section{display:flex;flex-direction:column;gap:16px}
 table.temps{border-collapse:collapse;font-size:.9rem;width:100%;font-variant-numeric:tabular-nums}
 table.temps td{padding:3px 0;border-bottom:1px dotted var(--line)}
 table.temps td:last-child{text-align:right;font-family:var(--f-mono);font-size:.82rem}
+.ladder{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+@media (max-width:1000px){.ladder{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:560px){.ladder{grid-template-columns:minmax(0,1fr)}}
+.rank .num{font-family:var(--f-mono);font-size:.75rem;color:var(--muted)}
+.rank dl{margin:0;display:flex;flex-direction:column;gap:8px;font-size:.92rem}
+.rank dt{font-family:var(--f-mono);font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.rank dd{margin:0}
+.rank ul{margin:0;padding-left:1.1em}
+.rank.top{border-color:var(--ink)}
+.rules{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:4px 24px}
+.tablebox{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:4px}
+table.om{border-collapse:collapse;width:100%;min-width:720px;font-size:.92rem}
+table.om th{font-family:var(--f-mono);font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:500;text-align:left;padding:10px 14px;border-bottom:1px solid var(--line)}
+table.om td{padding:8px 14px;border-bottom:1px dotted var(--line);vertical-align:top}
+table.om tr:last-child td{border-bottom:0}
+table.om td:first-child{white-space:nowrap}
+.guild{display:flex;flex-direction:column;gap:6px;font-size:.92rem;border-top:1px solid var(--line);padding-top:12px}
+.guild h4{margin:0;font-family:var(--f-mono);font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;font-weight:500;color:var(--muted)}
+.steps-inline{display:flex;flex-wrap:wrap;gap:4px;align-items:center;font-family:var(--f-display);font-size:.9rem}
+.steps-inline i{font-style:normal;color:var(--muted)}
 .future{border:1px dashed var(--ret)}
 .future h3{color:var(--ret)}
 @media (prefers-reduced-motion: reduce){*{transition:none!important}}
@@ -167,6 +187,67 @@ table.temps td:last-child{text-align:right;font-family:var(--f-mono);font-size:.
     <div class="cards" id="enc"></div>
   </section>
 
+  <section id="gremios">
+    <div class="sechead">
+      <span class="eyebrow">Progresión del artesano</span>
+      <h2>Gremios y rangos</h2>
+      <p>Juegas con un solo artesano. Cada oficio de gremio tiene su propia escala de rangos, y el rango decide qué puedes fabricar, quién te contrata y si tienes taller propio. No puedes ser maestro en todo, así que para lo demás dependes de otros artesanos.</p>
+    </div>
+    <div class="ladder">
+      <article class="card rank">
+        <span class="num">Rango 1</span><h3>Aprendiz</h3>
+        <dl>
+          <dt>Cómo se entra</dt><dd>Un maestro te acepta tras un encargo de presentación.</dd>
+          <dt>Permite</dt><dd><ul><li>Recetas básicas del oficio</li><li>Usar el taller y las herramientas del maestro</li><li>Encargos pequeños para el taller</li></ul></dd>
+          <dt>Para subir</dt><dd>Dominar las recetas básicas, cumplir el tiempo de aprendizaje y pasar un examen práctico.</dd>
+        </dl>
+      </article>
+      <article class="card rank">
+        <span class="num">Rango 2</span><h3>Oficial</h3>
+        <dl>
+          <dt>Permite</dt><dd><ul><li>Encargos propios de nivel I y II</li><li>Alquilar un banco de trabajo</li><li>El viaje de oficial: aprender una técnica de otra región</li></ul></dd>
+          <dt>Para subir</dt><dd>Haber hecho el viaje, tener reputación con el gremio, pagar la cuota de entrada y que los veedores aprueben tu obra maestra.</dd>
+        </dl>
+      </article>
+      <article class="card rank">
+        <span class="num">Rango 3</span><h3>Maestro</h3>
+        <dl>
+          <dt>Permite</dt><dd><ul><li>Taller propio, mejorable por el Maestro de obras</li><li>Tu marca: las piezas firmadas valen más</li><li>Aprendices que producen solos lo básico</li><li>Encargos de nivel III y IV</li></ul></dd>
+          <dt>Para subir</dt><dd>Mucha fama y años como maestro en ese gremio.</dd>
+        </dl>
+      </article>
+      <article class="card rank top">
+        <span class="num">Rango 4</span><h3>Veedor</h3>
+        <dl>
+          <dt>Permite</dt><dd><ul><li>Examinar obras maestras y cobrar por ello</li><li>Fijar la calidad mínima del gremio</li><li>Encargos del concejo</li></ul></dd>
+          <dt>Límite</dt><dd>Solo puedes ser veedor de un gremio.</dd>
+        </dl>
+      </article>
+    </div>
+
+    <div class="twocol">
+      <div class="card">
+        <h3>Oficios libres</h3>
+        <p>Minería, Silvicultura, Agricultura y Ganadería no tenían gremio. Se progresa de otra forma:</p>
+        <div class="steps-inline"><span>Peón</span><i>›</i><span>Capataz</span><i>›</i><span>Concesionario</span></div>
+        <p class="note">De peón trabajas a jornal en mina, monte o finca ajena. De capataz diriges una cuadrilla y eliges qué vetas o rodales explotar. Como concesionario, el concejo te concede tu propia mina, monte o finca, que produce aunque no estés.</p>
+      </div>
+      <div class="card">
+        <h3>Reglas</h3>
+        <ul class="list">
+          <li><b>Un aprendizaje a la vez</b><span>Puedes entrar en cualquier gremio, pero solo aprendes en uno al mismo tiempo.</span></li>
+          <li><b>Oficial en 4 gremios como máximo</b><span>Obliga a elegir una ruta.</span></li>
+          <li><b>Maestro en 1, luego 2, luego 3</b><span>Cada nueva maestría se desbloquea con fama.</span></li>
+          <li><b>Inspecciones</b><span>Una pieza por debajo de la calidad mínima supone multa y pérdida de reputación. Si reincides, te expulsan.</span></li>
+          <li><b>Pleitos entre gremios</b><span>Carpinteros y ebanistas se disputan los muebles. Eventos que te obligan a tomar partido.</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="sechead"><h3>Obras maestras y viajes de oficial</h3><p>Pulsa un oficio para verlo en el mapa.</p></div>
+    <div class="tablebox"><table class="om" id="om"></table></div>
+  </section>
+
   <section>
     <div class="sechead">
       <span class="eyebrow">Revisión</span>
@@ -201,7 +282,7 @@ table.temps td:last-child{text-align:right;font-family:var(--f-mono);font-size:.
         <li><b>Desgaste de herramientas</b><span>Las herramientas se gastan, así que la herrería nunca deja de tener trabajo.</span></li>
         <li><b>Energía hidráulica</b><span>Los molinos mueven sierras, martinetes, fuelles y muelas de pigmento. Es un gran salto de progresión.</span></li>
         <li><b>Comercio y rutas</b><span>Ébano, caoba, lapislázuli, nácar o cochinilla no se encuentran en la región. Llegan por mercaderes o expediciones.</span></li>
-        <li><b>Gremios y rangos</b><span>Aprendiz, oficial y maestro. Para ser maestro hay que presentar una obra maestra, que sirve de encargo final de cada oficio.</span></li>
+        <li><span class="tag">Desarrollado arriba</span><b>Gremios y rangos</b><span>Aprendiz, oficial, maestro y veedor, con una obra maestra por oficio.</span></li>
         <li><b>Subproductos</b><span>Escoria, serrín, recortes de piel y ceniza tienen uso. Nada se tira.</span></li>
       </ul>
     </div>
@@ -382,6 +463,31 @@ const ENC=[
  {t:'Campana del concejo',c:'Concejo',l:'IV',r:'Gran fama · fundición de piezas grandes',s:[['min','mena de cobre y casiterita'],['fun','bronce de campana: 78 % cobre, 22 % estaño'],['can','arcilla y arena para el molde'],['gan','sebo y cera para la falsa campana'],['car','carbón en cantidad'],['her','badajo de hierro'],['con','campanario y yugo']]}
 ];
 
+// Gremios: obra maestra (o hito de concesión) y técnica del viaje de oficial
+const FREE=new Set(['min','sil','agr','gan']);
+const G={
+ min:{om:'Registrar una veta nueva y abrir una galería entibada con desagüe.'},
+ sil:{om:'Plan de tala y replantación de un monte, y una viga maestra de roble sin nudos.'},
+ agr:{om:'Cosecha de lino de fibra larga y aceite de linaza claro.'},
+ gan:{om:'Un rebaño de lana fina y un colmenar estable.'},
+ can:{om:'Un arco de sillería cuyas dovelas encajen sin mortero.',tec:'Estereotomía: cortar piedra para bóvedas complejas.'},
+ fun:{om:'Plata de ley copelada de una galena pobre y una pieza de bronce sin poros.',tec:'Beneficio de patio: sacar plata con azogue.'},
+ cal:{om:'Cal apagada durante un año y un estuco pulido que no agriete.',tec:'Estuco de mármol.'},
+ car:{om:'Una carbonera de carbón de fragua con alto rendimiento y nada quemado.',tec:'Hornos de pez para destilar brea.'},
+ qui:{om:'Agua fuerte capaz de separar el oro de la plata.',tec:'Pigmentos raros: ultramar y bermellón.'},
+ cur:{om:'Suela curtida con corteza durante un año y una badana fina.',tec:'Guadamecí: cuero repujado, plateado y pintado.'},
+ her:{om:'Un juego de herramientas templadas y una cerradura de guardas.',tec:'Damasquinado: incrustar oro y plata en acero.'},
+ alf:{om:'Un juego de loza vidriada sin defectos y un crisol que aguante tres fundiciones.',tec:'Mayólica: vidriado blanco de estaño pintado.'},
+ vid:{om:'Una copa soplada de cristal incoloro y una hoja de vidrio plano sin burbujas.',tec:'Vidrio de color en masa y emplomado.'},
+ mad:{om:'Una armadura de cubierta de par y nudillo y un tonel estanco.',tec:'Carpintería de lo blanco: techos de lazo.'},
+ tex:{om:'Un paño de lana teñido de grana, sin manchas ni aguas.',tec:'Teñido con cochinilla.'},
+ lap:{om:'Un brillante facetado, un cabujón y un camafeo.',tec:'Talla de piedras duras para mosaico.'},
+ orf:{om:'Un cáliz de plata de ley, cincelado y con piedras engastadas.',tec:'Filigrana y esmalte cloisonné.'},
+ con:{om:'Una bóveda que se sostenga y un horno que alcance 1500 °C.',tec:'Ruedas hidráulicas y martinetes.'},
+ eba:{om:'Un bargueño con taracea, herrajes calados y dorado.',tec:'Chapeado y marquetería de maderas exóticas.'}
+};
+const LADDER_G=['Aprendiz','Oficial','Maestro','Veedor'], LADDER_F=['Peón','Capataz','Concesionario'];
+
 // ---------- construcción del grafo ----------
 const W=1150, NW=168, NH=48, X=[95,345,595,840,1060], Y0=92, DY=112;
 const pos={};
@@ -484,7 +590,7 @@ function renderDetail(){
     const ins=MAT.filter(m=>m.to.includes(id)), outs=MAT.filter(m=>m.from===id);
     d.innerHTML=`<span class="eyebrow">Oficio · ${tierOf(id)}</span><h3>${P[id].n}</h3><p class="desc">${P[id].d}</p>
      <div class="flow">${ins.length?`<h4 class="in">Recibe (${ins.length})</h4>`+ins.map(m=>`<div class="row">${mlink(m.i)}<div class="chips">${pchip(m.from,'from')}</div></div>`).join(''):''}
-     ${outs.length?`<h4 class="out">Entrega (${outs.length})</h4>`+outs.map(m=>`<div class="row">${mlink(m.i)}<div class="chips">${m.to.map(t=>pchip(t,'to')).join('')}</div></div>`).join(''):''}</div>`;
+     ${outs.length?`<h4 class="out">Entrega (${outs.length})</h4>`+outs.map(m=>`<div class="row">${mlink(m.i)}<div class="chips">${m.to.map(t=>pchip(t,'to')).join('')}</div></div>`).join(''):''}</div>${guildHTML(id)}`;
   } else if(state.mode==='mat'){
     const m=MAT[state.id];
     d.innerHTML=`<span class="eyebrow">Material</span><h3>${m.n}</h3><p class="note">${m.note}</p>
@@ -496,6 +602,15 @@ function renderDetail(){
      <ul class="steps">${en.s.map(s=>`<li>${pchip(s[0])}<span>${s[1]}</span></li>`).join('')}</ul><p class="note">${en.r}</p>`;
   }
 }
+
+function guildHTML(id){
+  if(!G[id])return '';
+  const free=FREE.has(id), lad=(free?LADDER_F:LADDER_G).map(r=>`<span>${r}</span>`).join('<i>›</i>');
+  return `<div class="guild"><h4>${free?'Oficio libre':'Gremio'}</h4><div class="steps-inline">${lad}</div>
+   <p><b>${free?'Para la concesión':'Obra maestra'}:</b> ${G[id].om}</p>${G[id].tec?`<p><b>Viaje de oficial:</b> ${G[id].tec}</p>`:''}</div>`;
+}
+document.getElementById('om').innerHTML='<thead><tr><th>Oficio</th><th>Obra maestra / concesión</th><th>Viaje de oficial</th></tr></thead><tbody>'+
+  COLS.flat().filter(id=>G[id]).map(id=>`<tr><td>${pchip(id)}</td><td>${G[id].om}</td><td>${G[id].tec||'<span class="note">Oficio libre</span>'}</td></tr>`).join('')+'</tbody>';
 
 function select(mode,id){state={mode,id};apply();}
 svg.addEventListener('click',ev=>{const g=ev.target.closest('.n');if(g)select('prof',g.dataset.id);});
