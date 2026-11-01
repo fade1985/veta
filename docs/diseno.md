@@ -1,6 +1,7 @@
 # Veta — diseño de oficios
 
 Juego de progresión basado en oficios artesanales entrelazados de forma realista.
+Catálogo de materiales en `docs/catalogo.md`.
 El mapa interactivo está en `docs/mapa-oficios.html` (los datos de materiales y
 encargos viven en el `<script>` de ese archivo).
 
@@ -72,6 +73,43 @@ mina, monte o finca, que produce aunque el jugador no esté.
 | Orfebrería y joyería | Cáliz de plata de ley cincelado y con piedras | Filigrana y cloisonné |
 | Maestro de obras | Bóveda que se sostenga y horno de 1500 °C | Ruedas hidráulicas y martinetes |
 | Ebanistería | Bargueño con taracea, herrajes calados y dorado | Chapeado y marquetería |
+
+## Identificación por pruebas
+
+Los minerales y las gemas no se presentan por su nombre real hasta que el
+jugador los identifica. Al extraerlos aparecen por su aspecto: «piedra verde con
+bandas», «piedra gris muy pesada en cubitos». El catálogo completo, con aspecto,
+raya, dureza y confusiones, está en `catalogo.md`.
+
+### Estados de conocimiento
+1. **Desconocido**: solo se ve el aspecto.
+2. **Sospechado**: las pruebas dejan pocos candidatos; el juego los muestra.
+3. **Identificado**: aparece el nombre real y lo que contiene, p. ej. *Malaquita (cobre)*.
+   Desde entonces, ese mineral se reconoce siempre.
+
+Identificar el mineral no dice **cuánta riqueza** tiene esa mena. La riqueza
+(ley) solo se conoce con un ensayo a fuego.
+
+### Pruebas (de menos a más fiable)
+| Prueba | Requiere | Distingue | Coste |
+|---|---|---|---|
+| Aspecto | Nada | Color, brillo, forma; poco fiable | Gratis |
+| Peso en la mano | Nada | Galena, casiterita y oro pesan mucho | Gratis |
+| Raya | Placa de porcelana sin esmaltar (Alfarería) | Hematites (roja), pirita (negra), oro (amarilla), cinabrio (escarlata) | Desgaste de la placa |
+| Dureza | Uña (2,5), cobre (3), navaja (5,5), vidrio (5,5), cuarzo (7) | Pirita frente a calcopirita, gemas frente a vidrio | Puede marcar la pieza |
+| Imán | Imán natural (magnetita) | Magnetita | Gratis |
+| Ácido | Vinagre o agua fuerte (Botica) | Carbonatos que burbujean: malaquita, azurita, calcita, calamina | Gasta reactivo |
+| Piedra de toque | Lidita + agua fuerte | Quilates del oro | Gasta reactivo |
+| Densidad | Balanza hidrostática (era III) | Gemas y metales preciosos sin dañarlos | Gratis una vez construida |
+| Tacto y lupa | Lente (Vidriería) | Vidrio frente a gema, inclusiones, doble imagen | Gratis |
+| Ensayo a fuego | Crisol o copela, carbón, horno | Lo que contiene la mena y **su riqueza** | Gasta muestra y combustible |
+
+### Cómo encaja con el resto
+- **Minería**: a mayor rango, más minerales se reconocen a simple vista.
+- **Botica**: hace las pruebas con ácido y los ensayos; ofrece la tasación como servicio.
+- **Lapidaria**: aplica lo mismo a las gemas (espinela o rubí, vidrio o cristal de roca).
+- **Errores con consecuencias**: fundir pirita creyendo que es oro, o pagar caro un mineral que es una trampa. Ver la tabla de «minerales trampa» del catálogo.
+- **Encargos**: tasar vetas, descubrir fraudes (vellón vendido como plata, dobletes, strass), identificar piedras para coleccionistas.
 
 ## Sistemas a considerar
 - Temperatura máxima de los hornos según combustible y fuelle.
