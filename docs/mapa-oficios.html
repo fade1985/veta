@@ -141,6 +141,20 @@ table.om td:first-child{white-space:nowrap}
 .guild h4{margin:0;font-family:var(--f-mono);font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;font-weight:500;color:var(--muted)}
 .steps-inline{display:flex;flex-wrap:wrap;gap:4px;align-items:center;font-family:var(--f-display);font-size:.9rem}
 .steps-inline i{font-style:normal;color:var(--muted)}
+.seg{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap}
+.seg button{font:inherit;font-family:var(--f-mono);font-size:.8rem;border:1px solid var(--line);background:var(--bg);color:var(--ink);padding:2px 10px;border-radius:3px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.seg button:focus-visible{outline:2px solid var(--out);outline-offset:1px}
+svg#rec{display:block;width:100%;min-width:900px;height:auto}
+svg#rec .nm{font-size:13px}
+.n .era{font-family:var(--f-mono);font-size:10px;fill:var(--muted)}
+.n.sel .era{fill:var(--surface)}
+.n.trapn rect{stroke-dasharray:4 3}
+.n.locked{opacity:.28}
+.e.trap{stroke:var(--ret);stroke-dasharray:5 4}
+.e.locked{opacity:.04}
+.detail.first{border-top:0;padding-top:0}
+.detail .kv{font-size:.92rem}
 .future{border:1px dashed var(--ret)}
 .future h3{color:var(--ret)}
 @media (prefers-reduced-motion: reduce){*{transition:none!important}}
@@ -177,6 +191,29 @@ table.om td:first-child{white-space:nowrap}
       <div class="detail" id="detail"></div>
     </aside>
   </div>
+
+  <section id="recetas">
+    <div class="sechead">
+      <span class="eyebrow">Minería → Fundición</span>
+      <h2>Recetas de metales</h2>
+      <p>Cada mena da uno o varios metales, y los metales se combinan en aleaciones. Pulsa cualquier elemento para ver de dónde sale y adónde va. Con «Ver como aprendiz», las menas aparecen como las vería alguien que aún no las ha identificado.</p>
+    </div>
+    <div class="workspace">
+      <div class="mapbox">
+        <div class="toolbar">
+          <div class="seg" role="group" aria-label="Mostrar hasta la era">
+            <span class="eyebrow">Hasta la era</span>
+            <button data-era="1" aria-pressed="false">I</button><button data-era="2" aria-pressed="false">II</button><button data-era="3" aria-pressed="false">III</button><button data-era="4" aria-pressed="true">IV</button>
+          </div>
+          <div class="legend"><span><i class="sw in"></i>Sale de</span><span><i class="sw out"></i>Se convierte en</span><span><i class="sw ret"></i>Trampa</span></div>
+          <label for="apr"><input type="checkbox" id="apr"> Ver como aprendiz</label>
+        </div>
+        <div class="scroll"><svg id="rec" role="img" aria-label="Recetas: de las menas a los metales y de los metales a las aleaciones"></svg></div>
+        <p class="hint">Las menas con borde discontinuo son trampas: parecen valiosas y no dan el metal esperado. Fíjate en que algunas se ven igual que menas buenas.</p>
+      </div>
+      <aside class="panel" aria-live="polite"><div class="detail first" id="rdetail"></div></aside>
+    </div>
+  </section>
 
   <section id="encargos">
     <div class="sechead">
@@ -641,4 +678,174 @@ document.getElementById('enc').innerHTML=ENC.map((e,i)=>`<article class="card">
   <button class="btn" data-enc="${i}" aria-pressed="false">Ver en el mapa</button></article>`).join('');
 
 apply();
+
+// ---------- recetas: mena → metal → aleación ----------
+const RO=['','I','II','III','IV'];
+const RMET={
+ oro:{n:'Oro',f:'1064 °C',e:1,d:'No se oxida. Su pureza se mide en quilates.'},
+ pla:{n:'Plata',f:'962 °C',e:3,d:'Casi siempre se separa del plomo por copelación.'},
+ plo:{n:'Plomo',f:'327 °C',e:3,d:'Blando, pesado y tóxico. Recoge la plata de otros minerales.'},
+ ant:{n:'Antimonio',f:'631 °C',e:4,d:'Quebradizo. Endurece el plomo y el estaño.'},
+ est:{n:'Estaño',f:'232 °C',e:2,d:'Con el cobre da bronce.'},
+ cob:{n:'Cobre',f:'1085 °C',e:1,d:'El primer metal fundido. Base del bronce y del latón.'},
+ ars:{n:'Arsénico',f:'sublima a 615 °C',e:2,d:'Endurece el cobre: el primer bronce. Muy tóxico.'},
+ cin:{n:'Cinc',f:'420 °C (hierve a 907 °C)',e:3,d:'Se escapa como vapor al fundir, por eso durante siglos solo se usó metido en el latón.'},
+ mer:{n:'Mercurio',f:'líquido',e:3,d:'Disuelve el oro y la plata (amalgama). Muy tóxico.'},
+ bis:{n:'Bismuto',f:'271 °C',e:4,d:'Para aleaciones que funden a muy baja temperatura.'},
+ hie:{n:'Hierro',f:'1538 °C',e:2,d:'Sin alto horno no llega a fundirse: sale una masa pastosa (lupia) que se bate en la fragua.'},
+ plt:{n:'Platino',f:'1768 °C',e:4,d:'Ningún horno de la época lo funde. Una rareza.'},
+ nad:{n:'Sin metal',f:'—',e:1,d:'Minerales trampa: parecen menas valiosas y no dan el metal esperado.'}
+};
+// [nombre, aspecto sin identificar, metales, proceso, era, prueba clave, trampa]
+const RMEN=[
+ ['Oro nativo','Granos amarillos en el río',['oro'],'Lavar en batea o machacar el cuarzo, fundir en crisol y refinar.',1,'Raya amarilla; se aplasta sin romperse.'],
+ ['Electro','Granos de oro pálido',['oro','pla'],'Fundir y separar la plata del oro con agua fuerte (apartado).',1,'Raya amarillo pálido; muy pesado.'],
+ ['Plata nativa','Hilos blancos que se oscurecen',['pla'],'Limpiar y fundir en crisol.',3,'Maleable; se ennegrece al aire.'],
+ ['Acantita','Piedra gris oscura y blanda',['pla'],'Fundir con plomo y copelar, o amalgamar con azogue.',3,'Se corta con navaja como si fuera cera.'],
+ ['Pirargirita (rosicler)','Piedra rojo oscuro translúcida',['pla'],'Tostar, fundir con plomo y copelar.',3,'Raya roja.'],
+ ['Galena','Piedra gris muy pesada en cubitos',['plo','pla'],'Tostar, reducir con carbón a plomo y copelar: el plomo se oxida y queda la plata.',3,'Raya gris; se rompe en cubos.'],
+ ['Cerusita','Piedra blanca y pesada',['plo'],'Reducir con carbón a baja temperatura.',3,'Burbujea en agua fuerte.'],
+ ['Estibina','Agujas grises y blandas',['ant'],'Licuar a fuego suave y reducir con hierro.',4,'Muy blanda: casi se raya con la uña.'],
+ ['Casiterita','Piedra negra pesada',['est'],'Lavar y reducir con carbón en horno.',2,'Raya blanca: así se distingue de la magnetita.'],
+ ['Cobre nativo','Metal rojizo con verdín',['cob'],'Martillar o fundir en crisol.',1,'Raya rojo cobre; se dobla.'],
+ ['Malaquita','Piedra verde con bandas',['cob'],'Reducir con carbón en horno; no hace falta tostar.',1,'Raya verde clara; burbujea en ácido.'],
+ ['Azurita','Piedra azul intenso',['cob'],'Reducir con carbón en horno; no hace falta tostar.',1,'Raya azul; burbujea en ácido.'],
+ ['Cuprita','Piedra rojo oscuro vítrea',['cob'],'Reducir con carbón en horno.',2,'Raya rojo parda.'],
+ ['Calcopirita','Piedra dorada y brillante',['cob'],'Tostar varias veces para quitar el azufre, fundir a mata y refinar. El hierro se va con la escoria.',3,'Una navaja la raya; a la pirita no.'],
+ ['Bornita','Piedra con colores de pavo real',['cob'],'Tostar, fundir a mata y refinar.',3,'Iridiscente; raya gris negra.'],
+ ['Rejalgar','Piedra rojo anaranjada',['ars'],'Tostar y recoger el arsénico que sublima. Tóxico.',2,'Raya naranja.'],
+ ['Oropimente','Láminas amarillo dorado',['ars'],'Tostar y recoger el arsénico que sublima. Tóxico.',2,'Raya amarilla; se separa en láminas.'],
+ ['Calamina','Costra blanca verdosa',['cin'],'Cementación: calentar con cobre y carbón en crisol cerrado. El cinc entra en el cobre y da latón.',3,'Burbujea en ácido; raya blanca.'],
+ ['Blenda','Piedra parda con brillo de resina',['cin'],'Tostar y destilar en retortas cerradas; el cinc se condensa.',4,'Raya parda clara, no gris como la galena.'],
+ ['Cinabrio','Piedra roja brillante',['mer'],'Tostar y condensar el vapor de mercurio. Muy tóxico.',3,'Raya escarlata.'],
+ ['Bismuto nativo','Metal blanco rosado',['bis'],'Licuar a fuego suave.',4,'Funde con muy poco calor.'],
+ ['Limonita','Tierra parda de las charcas',['hie'],'Horno bajo con carbón: da una lupia pobre.',2,'Raya pardo amarillenta.'],
+ ['Hematites','Piedra rojiza que mancha',['hie'],'Horno bajo (lupia) o, más adelante, alto horno (hierro colado).',3,'Raya rojo cereza.'],
+ ['Magnetita','Piedra negra pesada',['hie'],'Horno bajo (lupia) o, más adelante, alto horno (hierro colado).',3,'Atrae el imán.'],
+ ['Siderita','Piedra parda con cristales curvos',['hie'],'Tostar y reducir como la hematites.',3,'Raya blanca; burbujea en ácido caliente.'],
+ ['Platina','Granitos grises en arenas de oro',['plt'],'No se funde con hornos de la época. Solo se separa en granos.',4,'Muy pesada y no funde.'],
+ ['Pirita','Piedra dorada y brillante',['nad'],'Al fundirla solo da humo de azufre y escoria. A la Botica le sirve para hacer vitriolo.',1,'Raya negra; raya el vidrio.',1],
+ ['Mica dorada','Escamas doradas brillantes',['nad'],'No da nada. Es el «oro de gato».',1,'Se separa en láminas y no pesa.',1],
+ ['Niquelina','Piedra cobriza pálida',['nad'],'Parece mena de cobre, pero no da cobre. El níquel no se sabrá trabajar hasta mucho después.',3,'Raya negro parda.',1],
+ ['Cobaltita','Piedra gris plateada',['nad'],'Parece mena de plata y no la da. Sí sirve para el azul cobalto de vidrio y loza.',3,'Huele a ajo al calentarla.',1],
+ ['Baritina','Piedra blanca y pesada',['nad'],'Pesa como una mena de plomo, pero no da metal.',3,'En el ensayo a fuego no queda metal.',1]
+];
+// [nombre, metales, uso, era, composición, tipo]
+const RALL=[
+ ['Oro de quilates',['oro','pla','cob'],'Joyería. Con más cobre sale oro rojo; con más plata, oro verde.',1,'Oro con plata y cobre'],
+ ['Tumbaga',['oro','cob'],'Piezas que se doran quitando el cobre de la superficie.',2,'Oro y cobre'],
+ ['Amalgama',['mer','oro','pla'],'Dorado a fuego.',3,'Mercurio con oro o plata'],
+ ['Plata de ley',['pla','cob'],'Platería.',3,'92,5 % plata y 7,5 % cobre'],
+ ['Vellón',['pla','cob'],'Moneda menuda. Fraude si se vende como plata.',3,'Plata con mucho cobre'],
+ ['Soldadura de plata',['pla','cob','cin'],'Joyería.',3,'Plata, cobre y cinc'],
+ ['Metal de imprenta',['plo','ant','est'],'Reservado para una futura Imprenta.',4,'Plomo, antimonio y estaño'],
+ ['Soldadura blanda',['est','plo'],'Calderería y vidrieras.',3,'Estaño y plomo'],
+ ['Peltre',['est','cob','ant','plo'],'Vajilla.',3,'Estaño con algo de cobre, antimonio o plomo'],
+ ['Bronce de herramienta',['cob','est'],'Herramientas, armas y estatuas.',2,'88 % cobre, 12 % estaño'],
+ ['Bronce de campana',['cob','est'],'Campanas: duro y sonoro.',3,'78 % cobre, 22 % estaño'],
+ ['Bronce de espejo',['cob','est'],'Espejos pulidos antes del espejo de vidrio.',3,'67 % cobre, 33 % estaño'],
+ ['Bronce arsenical',['cob','ars'],'El primer bronce. Tóxico de hacer.',2,'Cobre con 2–5 % de arsénico'],
+ ['Latón',['cob','cin'],'Herrajes, alambre e instrumentos.',3,'70 % cobre, 30 % cinc'],
+ ['Hierro dulce',['hie'],'Herrajes, rejas y cadenas.',2,'Lupia batida en la fragua','hierro'],
+ ['Acero cementado',['hie'],'Filos, herramientas y muelles.',3,'Hierro calentado durante días entre carbón','hierro'],
+ ['Acero de crisol',['hie'],'Hojas de lujo con dibujo.',4,'Hierro y carbón fundidos en crisol cerrado','hierro'],
+ ['Hierro colado',['hie'],'Ollas, morteros y balas. Se afina para hacerlo dulce.',4,'Sale líquido del alto horno; quebradizo','hierro']
+];
+
+const RN={}, rOut={}, rIn={}, RE=[];
+RMEN.forEach((m,i)=>{RN['m'+i]={k:'m'+i,t:'m',n:m[0],asp:m[1],mets:m[2],proc:m[3],e:m[4],hint:m[5],trap:!!m[6]};});
+Object.entries(RMET).forEach(([id,x])=>{RN['x'+id]={k:'x'+id,t:'x',id,...x};});
+RALL.forEach((a,i)=>{RN['a'+i]={k:'a'+i,t:'a',n:a[0],mets:a[1],uso:a[2],e:a[3],comp:a[4],iron:a[5]==='hierro'};});
+function addRE(s,t,trap){const e={k:s+'>'+t,s,t,trap};RE.push(e);(rOut[s]??=[]).push(e);(rIn[t]??=[]).push(e);}
+RMEN.forEach((m,i)=>m[2].forEach(x=>addRE('m'+i,'x'+x,!!m[6])));
+RALL.forEach((a,i)=>a[1].forEach(x=>addRE('x'+x,'a'+i,false)));
+
+const RCX={m:10,x:440,a:780}, RCW={m:250,x:170,a:220}, RNH=22, RTOP=70;
+RMEN.forEach((m,i)=>{RN['m'+i].y=RTOP+i*28;});
+function spread(keys,gap){
+  keys.sort((a,b)=>RN[a].y-RN[b].y);
+  let prev=-Infinity; keys.forEach(k=>{RN[k].y=Math.max(RN[k].y,prev+gap,RTOP);prev=RN[k].y;});
+}
+const xKeys=Object.keys(RMET).map(id=>'x'+id);
+xKeys.forEach(k=>{const ys=(rIn[k]||[]).map(e=>RN[e.s].y);RN[k].y=ys.reduce((a,b)=>a+b,0)/ys.length;});
+spread(xKeys,34);
+const aKeys=RALL.map((a,i)=>'a'+i);
+aKeys.forEach(k=>{const ys=rIn[k].map(e=>RN[e.s].y);RN[k].y=ys.reduce((a,b)=>a+b,0)/ys.length;});
+spread(aKeys,30);
+const RHgt=Math.max(...Object.values(RN).map(n=>n.y))+36;
+
+const rsvg=document.getElementById('rec');
+rsvg.setAttribute('viewBox',`0 0 1010 ${RHgt}`);
+function rpath(e){const a=RN[e.s],b=RN[e.t];const x1=RCX[a.t]+RCW[a.t],x2=RCX[b.t],m=(x1+x2)/2;return `M${x1} ${a.y}C${m} ${a.y} ${m} ${b.y} ${x2} ${b.y}`;}
+let rh=`<text class="colhead" x="${RCX.m}" y="34">Mena</text><text class="colhead" x="${RCX.x}" y="34">Metal</text><text class="colhead" x="${RCX.a}" y="34">Aleación o tipo de hierro</text><g id="rgE">`;
+RE.forEach(e=>{rh+=`<path class="e ${e.trap?'trap':''}" data-k="${e.k}" d="${rpath(e)}" stroke-width="1.6"></path>`;});
+rh+='</g><g id="rgA"></g><g>';
+Object.values(RN).forEach(n=>{const x=RCX[n.t],w=RCW[n.t];
+  rh+=`<g class="n ${n.trap?'trapn':''}" data-rk="${n.k}" tabindex="0" role="button">
+   <rect x="${x}" y="${n.y-RNH/2}" width="${w}" height="${RNH}" rx="4"/>
+   <text class="nm" x="${x+9}" y="${n.y+4.5}"></text>
+   <text class="era" x="${x+w-8}" y="${n.y+3.5}" text-anchor="end">${RO[n.e]}</text></g>`;});
+rh+='</g>';
+rsvg.innerHTML=rh;
+const rgE=rsvg.querySelector('#rgE'), rgA=rsvg.querySelector('#rgA');
+const rEdgeEl=new Map([...rsvg.querySelectorAll('.e')].map(el=>[el.dataset.k,el]));
+const rNodeEl=new Map([...rsvg.querySelectorAll('.n')].map(el=>[el.dataset.rk,el]));
+
+let rstate={key:'m5',era:4,apr:false};
+const rlabel=n=>n.t==='m'&&rstate.apr?n.asp:n.n;
+const rchip=k=>`<button class="chip" data-r="${k}">${rlabel(RN[k])}</button>`;
+
+function rApply(){
+  const sel=rstate.key, nodes=new Map([[sel,'sel']]), edges=new Map(), n=RN[sel];
+  const down=k=>(rOut[k]||[]).forEach(e=>{edges.set(e.k,'out');nodes.set(e.t,'r-out');});
+  const up=k=>(rIn[k]||[]).forEach(e=>{edges.set(e.k,'in');nodes.set(e.s,'r-in');});
+  if(n.t==='m'){down(sel);(rOut[sel]||[]).forEach(e=>down(e.t));}
+  else if(n.t==='x'){up(sel);down(sel);}
+  else {up(sel);(rIn[sel]||[]).forEach(e=>up(e.s));}
+  RE.forEach(e=>{const el=rEdgeEl.get(e.k),c=edges.get(e.k);
+    el.classList.remove('in','out','dim','locked');
+    if(RN[e.s].e>rstate.era||RN[e.t].e>rstate.era)el.classList.add('locked');
+    if(c){el.classList.add(c);rgA.appendChild(el);}else{el.classList.add('dim');rgE.appendChild(el);}});
+  rNodeEl.forEach((el,k)=>{el.classList.remove('sel','r-in','r-out','dim','locked');
+    const c=nodes.get(k); el.classList.add(c||'dim'); if(RN[k].e>rstate.era)el.classList.add('locked');
+    el.querySelector('.nm').textContent=rlabel(RN[k]); el.setAttribute('aria-label',rlabel(RN[k]));});
+  document.querySelectorAll('[data-era]').forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.era===rstate.era)));
+  rDetail();
+}
+function rDetail(){
+  const n=RN[rstate.key], d=document.getElementById('rdetail');
+  const outs=(rOut[n.k]||[]).map(e=>e.t), ins=(rIn[n.k]||[]).map(e=>e.s);
+  const lockNote=n.e>rstate.era?`<p class="note">Aún no disponible: aparece en la era ${RO[n.e]}.</p>`:'';
+  if(n.t==='m'){
+    const alloys=[...new Set(outs.flatMap(x=>(rOut[x]||[]).map(e=>e.t)))];
+    if(rstate.apr){
+      d.innerHTML=`<span class="eyebrow">Mena sin identificar · era ${RO[n.e]}</span><h3>${n.asp}</h3>${lockNote}
+       <p class="desc">Todavía no sabes qué es. Prueba que la delata:</p><p class="kv"><b>${n.hint}</b></p>
+       <p class="note">Al identificarla: ${n.n}${n.trap?' (trampa)':''}.</p>`;
+      return;
+    }
+    d.innerHTML=`<span class="eyebrow">${n.trap?'Mineral trampa':'Mena'} · era ${RO[n.e]}</span><h3>${n.n}</h3>${lockNote}
+     <p class="note">Sin identificar se ve como: «${n.asp}»</p>
+     <div class="flow"><h4>Proceso</h4><p class="kv">${n.proc}</p>
+     <h4>Prueba clave</h4><p class="kv">${n.hint}</p>
+     <h4 class="out">${n.trap?'Resultado':'Da'}</h4><div class="chips">${outs.map(rchip).join('')}</div>
+     ${alloys.length?`<h4 class="out">Sirve para</h4><div class="chips">${alloys.map(rchip).join('')}</div>`:''}</div>`;
+  } else if(n.t==='x'){
+    d.innerHTML=`<span class="eyebrow">Metal · era ${RO[n.e]}</span><h3>${n.n}</h3>${lockNote}<p class="desc">${n.d}</p>
+     <p class="kv"><b>Funde a:</b> ${n.f}</p>
+     <div class="flow"><h4 class="in">Sale de (${ins.length})</h4><div class="chips">${ins.map(rchip).join('')}</div>
+     ${outs.length?`<h4 class="out">Entra en (${outs.length})</h4><div class="chips">${outs.map(rchip).join('')}</div>`:''}</div>`;
+  } else {
+    d.innerHTML=`<span class="eyebrow">${n.iron?'Tipo de hierro':'Aleación'} · era ${RO[n.e]}</span><h3>${n.n}</h3>${lockNote}
+     <p class="kv"><b>${n.iron?'Cómo se obtiene':'Composición'}:</b> ${n.comp}</p><p class="desc">${n.uso}</p>
+     <div class="flow"><h4 class="in">Necesita</h4><div class="chips">${ins.map(rchip).join('')}</div></div>`;
+  }
+}
+const rSelect=k=>{rstate.key=k;rApply();};
+rsvg.addEventListener('click',ev=>{const g=ev.target.closest('[data-rk]');if(g)rSelect(g.dataset.rk);});
+rsvg.addEventListener('keydown',ev=>{const g=ev.target.closest('[data-rk]');if(g&&(ev.key==='Enter'||ev.key===' ')){ev.preventDefault();rSelect(g.dataset.rk);}});
+document.addEventListener('click',ev=>{const b=ev.target.closest('[data-r]');if(b)rSelect(b.dataset.r);
+  const er=ev.target.closest('[data-era]');if(er){rstate.era=+er.dataset.era;rApply();}});
+document.getElementById('apr').addEventListener('change',ev=>{rstate.apr=ev.target.checked;rApply();});
+rApply();
 </script>
